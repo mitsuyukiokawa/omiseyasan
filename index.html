@@ -6,11 +6,15 @@
 <script>
 // ▼▼▼ 設定はここだけ：GASのウェブアプリのURL（末尾が /exec）を ' ' の間に貼り付けます ▼▼▼
 const PRODUCTS_URL='https://script.google.com/macros/s/AKfycbyaSmei9Lezyeuw9tpwD4XgEDlbHaBOAIG_U5pfybkGmgWrLUL_1UySlFnBvqb_LGHOKw/exec';
+// 読取りの速さ（ミリ秒。1000＝1秒）。大きくするほどゆっくりになります。
+const AIM_MS=800;   // カメラの映像が出てから、この時間がたつまでは読み取りません（ねらう時間）
+const HOLD_MS=900;  // 読み取ったあと、この時間だけ映像を止めて見せてからカメラを閉じます
 // ▲▲▲ 設定はここまで ▲▲▲
 </script>
+<script src="config.js"></script>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;color:#263e38;background:#f5f3ec;--green:#28594f;--line:#d9dfd9}*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{touch-action:manipulation;cursor:pointer;border:0;border-radius:14px;min-height:48px;font-weight:700}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible{outline:3px solid #d37c30;outline-offset:2px}.app{max-width:520px;margin:auto;padding:14px 16px max(18px,env(safe-area-inset-bottom))}header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}h1{font-size:23px;margin:0;letter-spacing:.06em}.tag{font-size:11px;color:#5c746c;letter-spacing:.1em}.sub{font-size:13px;margin:4px 0 0;color:#62766d}.small{font-size:12px;min-height:42px;padding:8px 12px;background:#e8e9df;color:#364b42}.panel{background:white;border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}.scan-label{font-size:14px;font-weight:700;display:block;margin-bottom:8px}.scanbox{display:flex;gap:8px}#scan{width:100%;min-width:0;font-size:16px;border:2px solid #b9d1c4;border-radius:12px;padding:11px;background:#f4faf5}.scanbox button{background:#e3efe7;color:var(--green);font-size:13px;padding:8px 10px}.message{font-size:14px;min-height:22px;margin:10px 0 0;color:var(--green)}.error{color:#a03925!important}.latest{padding:12px 0 2px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}.latest strong{font-size:24px;overflow-wrap:anywhere}.latest span{white-space:nowrap;font-size:22px;font-weight:700}.list-title{display:flex;justify-content:space-between;font-size:13px;color:#61766b;margin:0 0 8px}.basket{list-style:none;padding:0;margin:0;max-height:165px;overflow:auto}.basket li{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #eef0ed;font-size:15px}.basket .name{flex:1;overflow-wrap:anywhere}.basket .price{white-space:nowrap}.remove{background:#f0f1ec;color:#6b6e66;font-size:13px;padding:0;width:42px;min-height:36px;flex-shrink:0}.empty{padding:22px 0;text-align:center;color:#7c8a81;font-size:14px}.totalbar{display:flex;justify-content:space-between;align-items:baseline;margin:12px 0}.totalbar strong{font-size:27px}.primary{width:100%;background:var(--green);color:white;font-size:20px;padding:13px}.secondary{background:#e7ebe4;color:var(--green);width:100%;font-size:17px;padding:12px;margin-top:9px}.paytotal{display:flex;justify-content:space-between;align-items:baseline;margin:2px 0 14px;font-weight:700}.paytotal strong{font-size:28px}.fieldlabel{font-size:14px;font-weight:700}.money{font-size:30px;font-weight:700;min-height:51px;text-align:right;padding:5px 0}.change{background:#e8f2e9;padding:13px;border-radius:14px}.change .money{min-height:40px;font-size:28px}.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.keypad button{min-height:51px;font-size:24px;background:white;border:1px solid #d7dfd7}.keypad .word{font-size:14px;background:#e8eae2}.shortcuts{display:flex;gap:7px;margin-top:10px}.shortcuts button{flex:1;background:#e8eae2;font-size:13px;min-height:40px}.foot{font-size:11px;text-align:center;color:#718175;margin:10px 0}.notice{font-size:13px;line-height:1.65}details summary{cursor:pointer;font-size:14px;font-weight:700;padding:8px 0}#loading{padding:24px 16px;text-align:center}#retry{margin-top:15px}#refresh{width:100%;margin-top:10px}label.toggle{display:flex;gap:8px;align-items:center;margin:12px 0}dialog{border:1px solid var(--line);border-radius:20px;max-width:335px;width:calc(100% - 32px);padding:22px}dialog::backdrop{background:#162b2580}dialog p{font-size:18px;line-height:1.6}body [hidden]{display:none!important}@media(max-height:680px){.app{padding-top:10px}.panel{padding:13px;margin-bottom:10px}.basket{max-height:135px}.keypad{gap:6px;margin:10px 0}.keypad button{min-height:47px}.money{min-height:44px}.paytotal{margin-bottom:9px}}
-#cameraVideo{display:block;width:100%;height:190px;object-fit:cover;background:#192b25;border-radius:14px;margin-top:10px}.cameraTip{font-size:12px;line-height:1.6;color:#61766b;margin:10px 0 0}#startCamera{font-size:19px}.latest strong{font-size:22px}.guide{display:none}#cameraVideo:not([hidden])+.guide{display:block;position:relative;height:2px;margin:-96px 10% 94px;background:#e5484d;border-radius:1px;pointer-events:none}</style></head>
+#cameraVideo{display:block;width:100%;height:190px;object-fit:cover;background:#192b25;border-radius:14px;margin-top:10px}.cameraTip{font-size:12px;line-height:1.6;color:#61766b;margin:10px 0 0}#startCamera{font-size:19px}.latest strong{font-size:22px}.guide{display:none}#cameraVideo:not([hidden])+.guide{display:block;position:relative;height:2px;margin:-96px 10% 94px;background:#e5484d;border-radius:1px;pointer-events:none}#cameraVideo.hit{outline:5px solid #2fa36b;outline-offset:-5px}#cameraVideo.hit+.guide{background:#2fa36b}</style></head>
 <body><main class="app"><header><div><div class="tag">LITTLE MARKET</div><h1>おみせやさん</h1><p class="sub">ピッと よんで、おかいもの</p></div><button id="helpButton" class="small" aria-expanded="false">おとなの方へ</button></header>
 <section id="loading" class="panel"><p id="loadMessage" role="status">おみせの じゅんびちゅう…</p><button id="retry" class="secondary" hidden>もういちど</button></section>
 <section id="shopping" hidden>
@@ -33,7 +37,7 @@ const PRODUCTS_URL='https://script.google.com/macros/s/AKfycbyaSmei9Lezyeuw9tpwD
 <details><summary>番号を手入力して確認する</summary><div class="scanbox"><input id="scan" type="text" inputmode="numeric" autocomplete="off" placeholder="例：1001" aria-label="商品番号の手入力"><button id="focusScan">ついか</button></div></details>
 <p>商品名・価格はスプレッドシートの「商品」で変更します。かごが空のときに読み直してください。</p><button id="refresh" class="secondary">しょうひんを よみなおす</button><p id="helpStatus" role="status"></p>
 <details><summary>カメラの診断</summary><button id="diag" class="secondary">しんだんする</button><p id="diagOut" style="white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.5"></p></details>
-<p>1会計200個まで。会計履歴は保存しません。ページの終了・再読み込みでかごは消えます。</p><p>初期商品の確認：りんご100円＋パン120円、500円を預かるとおつり280円です。</p></section><p class="foot">おみせやさん · カメラ版 3.0</p></main>
+<p>1会計200個まで。会計履歴は保存しません。ページの終了・再読み込みでかごは消えます。</p><p>初期商品の確認：りんご100円＋パン120円、500円を預かるとおつり280円です。</p></section><p class="foot">おみせやさん · カメラ版 3.1</p></main>
 <dialog id="resetDialog"><p>おかいけいの とちゅうだよ。<br>つぎの おきゃくさんに する？</p><button id="confirmReset" class="primary">つぎの おきゃくさんへ</button><button id="cancelReset" class="secondary">もどる</button></dialog>
 <script>
 /* ZXing JS library 0.21.3 — Apache-2.0. License enclosed. https://github.com/zxing-js/library */
@@ -118,8 +122,8 @@ async function load(){
  $('shopping').hidden=true;$('payment').hidden=true;$('loading').hidden=false;$('retry').hidden=true;$('loadMessage').textContent='おみせの じゅんびちゅう…';
  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),20000);
  try{
-  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(PRODUCTS_URL))throw Error('index.htmlの先頭にあるPRODUCTS_URLに、GASのURL（末尾が /exec）を設定してください。');
-  const res=await fetch(PRODUCTS_URL,{cache:'no-store',redirect:'follow',signal:ctrl.signal});
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(productsUrl))throw Error('GASのURL（末尾が /exec）が未設定です。config.js、またはindex.htmlの先頭にあるPRODUCTS_URLに設定してください。');
+  const res=await fetch(productsUrl,{cache:'no-store',redirect:'follow',signal:ctrl.signal});
   if(!res.ok)throw Error('商品表を取得できませんでした（'+res.status+'）。');
   const text=await res.text();let data;
   try{data=JSON.parse(text);}catch{throw Error('商品表のURLからJSONが返りません。GASの「デプロイを管理」で新バージョンをデプロイしたか確認してください。');}
@@ -138,7 +142,13 @@ async function load(){
  }finally{clearTimeout(timer);}
 }
 // Camera controller: one successful decode per explicit scan action.
-let lastCameraError='なし', lastPhotoTry='なし';
+// config.js があればその値を優先し、なければ上の設定欄の値を使う。
+const CONFIG=window.OMISE_CONFIG||{};
+const urlOk=u=>typeof u==='string'&&/^https:\/\/script\.google\.com\/.+\/exec$/.test(u);
+const productsUrl=urlOk(CONFIG.productsUrl)?CONFIG.productsUrl:PRODUCTS_URL;   // config.jsが未記入なら設定欄の値を使う
+const msOf=(v,d)=>Number.isFinite(v)?Math.max(0,Math.min(5000,v)):d;
+const aimMs=msOf(CONFIG.aimMs,AIM_MS),holdMs=msOf(CONFIG.holdMs,HOLD_MS);
+let lastCameraError='なし', lastPhotoTry='なし', holdTimer=null;
 let cameraEpoch=0, liveReader=null, liveStream=null, cameraBusy=false, photoBusy=false, cameraTimer=null;
 function cameraButtons(){
  $('startCamera').disabled=cameraBusy||photoBusy;
@@ -146,12 +156,12 @@ function cameraButtons(){
  $('stopCamera').hidden=!cameraBusy;
 }
 function stopCamera(){
- cameraEpoch++;clearTimeout(cameraTimer);cameraTimer=null;
+ cameraEpoch++;clearTimeout(cameraTimer);cameraTimer=null;clearTimeout(holdTimer);holdTimer=null;
  if(liveReader){try{liveReader.reset();}catch{}liveReader=null;}
  if(liveStream){liveStream.getTracks().forEach(t=>t.stop());liveStream=null;}
  const video=$('cameraVideo');
  if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null;}
- video.hidden=true;cameraBusy=false;photoBusy=false;cameraButtons();
+ video.classList.remove('hit');video.hidden=true;cameraBusy=false;photoBusy=false;cameraButtons();
 }
 function barcodeHints(tryHarder=true){
  const h=new Map();
@@ -164,6 +174,13 @@ function acceptCameraResult(code,epoch){
  stopCamera();scan(String(code));
  $('startCamera').textContent='つぎの しょうひんを よむ';
  return true;
+}
+// ライブ読取りの成功時：すぐ登録して音を鳴らし、映像を止めて緑の枠で見せてから閉じる。
+function holdCameraResult(code,epoch){
+ if(epoch!==cameraEpoch||phase!=='shop'||!cameraBusy)return;
+ const video=$('cameraVideo');video.classList.add('hit');try{video.pause();}catch{}
+ scan(code);
+ holdTimer=setTimeout(()=>{if(epoch===cameraEpoch){stopCamera();$('startCamera').textContent='つぎの しょうひんを よむ';}},holdMs);
 }
 async function startCamera(){
  if(phase!=='shop'||cameraBusy||photoBusy)return;
@@ -180,11 +197,16 @@ async function startCamera(){
    if(epoch!==cameraEpoch||phase!=='shop'){stream.getTracks().forEach(t=>t.stop());return;}
    liveStream=stream;const reader=new ZXing.BrowserMultiFormatReader(barcodeHints(false),150);liveReader=reader;
    const video=$('cameraVideo');video.hidden=false;
-   let unknownCode='',unknownCount=0,unknownTold='';
+   let unknownCode='',unknownCount=0,unknownTold='',shownAt=0,hit=false;
    await reader.decodeFromStream(stream,video,(result)=>{
-     if(!result||epoch!==cameraEpoch)return;
+     if(epoch!==cameraEpoch||hit)return;
+     if(!shownAt)shownAt=Date.now();          // 映像が出て最初の解析が走った時刻
+     if(!result)return;
      const code=result.getText().trim();
-     if(products.has(code)){acceptCameraResult(code,epoch);return;}
+     if(products.has(code)){
+       if(Date.now()-shownAt<aimMs)return;      // ねらう時間のあいだは読み取らない
+       hit=true;holdCameraResult(code,epoch);return;
+     }
      // 未登録・誤検出ではカメラを止めない。同じ値を2回読んだときだけ知らせる。
      if(code===unknownCode)unknownCount++;else{unknownCode=code;unknownCount=1;}
      if(unknownCount>=2&&unknownTold!==code){unknownTold=code;message('その バーコードは まだ とうろくされていないよ',true);beep(false);}
@@ -296,7 +318,8 @@ $('diag').addEventListener('click',async()=>{
  const out=$('diagOut'),lines=[];const put=t=>{lines.push(t);out.textContent=lines.join('\n');};
  $('diag').disabled=true;
  try{
-  put('版: カメラ版 3.0');
+  put('版: カメラ版 3.1');
+  put('読取りの速さ: ねらう時間 '+aimMs+'ms／見せる時間 '+holdMs+'ms');
   put('読取り部品(ZXing): '+(typeof ZXing==='undefined'?'読み込めていません':'OK'));
   put('安全な接続: '+(window.isSecureContext?'はい':'いいえ'));
   put('カメラAPI: '+(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?'あり':'なし'));
