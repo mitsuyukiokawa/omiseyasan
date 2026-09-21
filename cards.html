@@ -76,7 +76,7 @@ function render(){
   chosen.slice(i,i+6).forEach(p=>{
    const card=document.createElement('article');card.className='card';
    const name=document.createElement('div');name.className='name';name.style.fontSize=nameSize(p.name);name.textContent=p.name;
-   const price=document.createElement('div');price.className='price';price.textContent=p.price.toLocaleString('ja-JP')+' えん';
+   const price=document.createElement('div');price.className='price';price.textContent=p.price.toLocaleString('ja-JP')+' 円';
    const bar=document.createElement('div');bar.innerHTML=code39Svg(p.code);
    const code=document.createElement('div');code.className='code';code.textContent=p.code;
    card.append(name,price,bar.firstChild,code);page.append(card);
