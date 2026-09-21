@@ -37,7 +37,7 @@ const HOLD_MS=500;  // 読み取ったあと、この時間だけ緑の枠を見
 <details><summary>番号を手入力して確認する</summary><div class="scanbox"><input id="scan" type="text" inputmode="numeric" autocomplete="off" placeholder="例：1001" aria-label="商品番号の手入力"><button id="focusScan">ついか</button></div></details>
 <p>商品名・価格はスプレッドシートの「商品」で変更します。かごが空のときに読み直してください。</p><button id="refresh" class="secondary">しょうひんを よみなおす</button><p id="helpStatus" role="status"></p>
 <details><summary>カメラの診断</summary><button id="diag" class="secondary">しんだんする</button><p id="diagOut" style="white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.5"></p></details>
-<p>1会計200個まで。会計履歴は保存しません。ページの終了・再読み込みでかごは消えます。</p><p>初期商品の確認：りんご100円＋パン120円、500円を預かるとおつり280円です。</p></section><p class="foot">おみせやさん · カメラ版 3.3</p></main>
+<p>1会計200個まで。会計履歴は保存しません。ページの終了・再読み込みでかごは消えます。</p><p>初期商品の確認：りんご100円＋パン120円、500円を預かるとおつり280円です。</p></section><p class="foot">おみせやさん · カメラ版 3.4</p></main>
 <dialog id="resetDialog"><p>おかいけいの とちゅうだよ。<br>つぎの おきゃくさんに する？</p><button id="confirmReset" class="primary">つぎの おきゃくさんへ</button><button id="cancelReset" class="secondary">もどる</button></dialog>
 <script>
 /* ZXing JS library 0.21.3 — Apache-2.0. License enclosed. https://github.com/zxing-js/library */
@@ -345,7 +345,7 @@ $('diag').addEventListener('click',async()=>{
  const out=$('diagOut'),lines=[];const put=t=>{lines.push(t);out.textContent=lines.join('\n');};
  $('diag').disabled=true;
  try{
-  put('版: カメラ版 3.3');
+  put('版: カメラ版 3.4');
   put('読取りの速さ: ねらう時間 '+aimMs+'ms／見せる時間 '+holdMs+'ms');
   put('読取り部品(ZXing): '+(typeof ZXing==='undefined'?'読み込めていません':'OK'));
   put('安全な接続: '+(window.isSecureContext?'はい':'いいえ'));
