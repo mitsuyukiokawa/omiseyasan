@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>おみせやさん しょうひんカード</title>
+<script>
+// config.js がない場合に使うGASのURL（config.js があれば、そちらが優先されます）
+const PRODUCTS_URL='https://script.google.com/macros/s/AKfycbyaSmei9Lezyeuw9tpwD4XgEDlbHaBOAIG_U5pfybkGmgWrLUL_1UySlFnBvqb_LGHOKw/exec';
+</script>
+<script src="config.js"></script>
+<style>
+@page{size:A4 portrait;margin:12mm}
+*{box-sizing:border-box}
+body{font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;margin:0;color:#111;background:#fff}
+.tools{max-width:186mm;margin:0 auto;padding:14px;background:#eee;border-bottom:1px solid #999;font-size:14px;line-height:1.7}
+.tools h1{font-size:18px;margin:0 0 6px}
+.tools button{font:inherit;padding:8px 16px;margin:6px 6px 6px 0;border:1px solid #555;border-radius:8px;background:#fff;cursor:pointer}
+.tools button.main{background:#222;color:#fff;font-weight:bold}
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 12px;margin:8px 0;max-height:220px;overflow:auto;background:#fff;border:1px solid #bbb;padding:8px}
+.picker label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.warn{color:#000;font-weight:bold;border:1px solid #000;padding:6px 10px;margin:8px 0;background:#fff}
+#sheets{width:186mm;margin:0 auto}
+.page{width:186mm;display:grid;grid-template-columns:repeat(2,90mm);grid-auto-rows:76mm;gap:5mm;padding-top:8mm;break-after:page}
+.page:last-child{break-after:auto}
+.card{height:76mm;border:1px dashed #777;text-align:center;padding:6mm 3mm 3mm;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.name{font-weight:bold;line-height:1.25;overflow-wrap:anywhere;max-height:24mm;overflow:hidden}
+.price{font-size:19pt;margin:2mm 0}
+.barcode{display:block;width:76mm;height:22mm;margin:2mm auto 1mm;flex-shrink:0}
+.code{font-size:12pt;letter-spacing:3px;font-family:"Courier New",monospace}
+@media print{.tools{display:none}}
+@media screen{.page{border-bottom:1px dotted #bbb;padding-bottom:8mm}}
+</style></head>
+<body>
+<div class="tools">
+<h1>おみせやさん しょうひんカード</h1>
+<div id="status">商品表を読み込んでいます…</div>
+<div id="controls" hidden>
+<div>印刷する商品を選びます（新しく増やした商品だけを選ぶこともできます）。</div>
+<button id="all">すべて選ぶ</button><button id="none">すべて外す</button>
+<div id="picker" class="picker"></div>
+<div id="warn" class="warn" hidden></div>
+<button id="print" class="main">印刷する</button>
+<div>印刷の設定：A4縦・倍率100％（「用紙に合わせる」はオフ）・ヘッダーとフッターなし。1ページに6枚です。</div>
+</div>
+</div>
+<div id="sheets"></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const CONFIG=window.OMISE_CONFIG||{};
+const urlOk=u=>typeof u==='string'&&/^https:\/\/script\.google\.com\/.+\/exec$/.test(u);
+const productsUrl=urlOk(CONFIG.productsUrl)?CONFIG.productsUrl:PRODUCTS_URL;
+
+// Code 39（数字とスタート／ストップ記号）。n＝細い、w＝太い。バー・スペースの順に9要素。
+const CODE39={'0':'nnnwwnwnn','1':'wnnwnnnnw','2':'nnwwnnnnw','3':'wnwwnnnnn','4':'nnnwwnnnw','5':'wnnwwnnnn','6':'nnwwwnnnn','7':'nnnwnnwnw','8':'wnnwnnwnn','9':'nnwwnnwnn','*':'nwnnwnwnn'};
+const WIDE=3,QUIET=10;          // 太細比3:1、左右の余白は10モジュール
+const BAR_WIDTH_MM=76;          // カード上のバーコードの幅
+function code39Modules(code){return (code.length+2)*(6+3*WIDE)+(code.length+1)+QUIET*2;}
+function code39Svg(code){
+ const text='*'+code+'*';let x=QUIET,rects='';
+ for(const ch of text){
+  const p=CODE39[ch];if(!p)throw Error('バーコードにできない文字です: '+ch);
+  for(let i=0;i<9;i++){const w=p[i]==='w'?WIDE:1;if(i%2===0)rects+='<rect x="'+x+'" y="0" width="'+w+'" height="10"/>';x+=w;}
+  x+=1;                          // 文字と文字の間の細いスペース
+ }
+ const total=x-1+QUIET;
+ return '<svg class="barcode" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+total+' 10" preserveAspectRatio="none" shape-rendering="crispEdges" role="img" aria-label="バーコード '+code+'"><rect x="0" y="0" width="'+total+'" height="10" fill="#fff"/><g fill="#000">'+rects+'</g></svg>';
+}
+function nameSize(name){const n=[...name].length;return n<=6?'22pt':n<=10?'17pt':n<=16?'13pt':'10.5pt';}
+
+let products=[];
+function render(){
+ const chosen=products.filter((p,i)=>$('pick'+i).checked);
+ $('sheets').replaceChildren();
+ for(let i=0;i<chosen.length;i+=6){
+  const page=document.createElement('section');page.className='page';
+  chosen.slice(i,i+6).forEach(p=>{
+   const card=document.createElement('article');card.className='card';
+   const name=document.createElement('div');name.className='name';name.style.fontSize=nameSize(p.name);name.textContent=p.name;
+   const price=document.createElement('div');price.className='price';price.textContent=p.price.toLocaleString('ja-JP')+' えん';
+   const bar=document.createElement('div');bar.innerHTML=code39Svg(p.code);
+   const code=document.createElement('div');code.className='code';code.textContent=p.code;
+   card.append(name,price,bar.firstChild,code);page.append(card);
+  });
+  $('sheets').append(page);
+ }
+ // 桁数が多いとバーが細くなり、カメラで読みにくくなるので知らせる。
+ const thin=chosen.filter(p=>BAR_WIDTH_MM/code39Modules(p.code)<0.33).map(p=>p.code+'（'+p.name+'）');
+ $('warn').hidden=!thin.length;
+ $('warn').textContent=thin.length?'次の商品は番号の桁数が多く、バーが細くなります。読み取りにくい場合は、番号を8桁以内にしてください：'+thin.join('、'):'';
+ $('print').disabled=!chosen.length;
+ $('print').textContent=chosen.length?'印刷する（'+chosen.length+'枚・'+Math.ceil(chosen.length/6)+'ページ）':'商品を選んでください';
+}
+async function load(){
+ try{
+  if(!urlOk(productsUrl))throw Error('GASのURLが未設定です。');
+  const res=await fetch(productsUrl,{cache:'no-store',redirect:'follow'});
+  if(!res.ok)throw Error('商品表を取得できませんでした（'+res.status+'）。');
+  let data;try{data=JSON.parse(await res.text());}catch{throw Error('商品表のURLからJSONが返りません。');}
+  if(!data||data.ok!==true)throw Error((data&&data.error)||'商品表を取得できませんでした。');
+  products=data.products.filter(p=>p&&typeof p.code==='string'&&/^\d{1,30}$/.test(p.code)&&typeof p.name==='string'&&Number.isInteger(p.price));
+  if(!products.length)throw Error('商品がありません。');
+  $('picker').replaceChildren();
+  products.forEach((p,i)=>{const l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.id='pick'+i;c.checked=true;c.addEventListener('change',render);l.append(c,' '+p.code+' '+p.name);$('picker').append(l);});
+  $('status').textContent=products.length+'種類の商品を読み込みました。名前・値段・番号はスプレッドシートの「商品」シートの内容です。';
+  $('controls').hidden=false;render();
+ }catch(e){$('status').textContent='読み込めませんでした。'+(e&&e.name==='TypeError'?'通信できませんでした。':(e&&e.message)||String(e));}
+}
+$('all').addEventListener('click',()=>{products.forEach((p,i)=>$('pick'+i).checked=true);render();});
+$('none').addEventListener('click',()=>{products.forEach((p,i)=>$('pick'+i).checked=false);render();});
+$('print').addEventListener('click',()=>window.print());
+load();
+</script>
+</body></html>
