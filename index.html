@@ -122,7 +122,7 @@ $('focusScan').addEventListener('click',()=>{const code=$('scan').value;$('scan'
 function renderPayment(){const sum=total();$('payTotal').textContent=yen(sum);$('received').textContent=paid===''?'— えん':yen(Number(paid));const shortage=paid!==''&&Number(paid)<sum;$('change').textContent=paid===''?'— えん':shortage?'あと '+yen(sum-Number(paid)):yen(Number(paid)-sum);$('change').classList.toggle('error',shortage);}
 $('checkout').addEventListener('click',()=>{if(!basket.length)return;stopCamera();phase='pay';paid='';$('scan').blur();$('shopping').hidden=true;$('payment').hidden=false;renderPayment();window.scrollTo(0,0);});
 $('back').addEventListener('click',()=>{phase='shop';paid='';$('scan').value='';$('payment').hidden=true;$('shopping').hidden=false;focusScan();window.scrollTo(0,0);});
-function key(k){if(phase!=='pay')return;if(k==='クリア')paid='';else if(k==='1けし')paid=paid.slice(0,-1);else if(paid.length<9)paid=(paid+k).replace(/^0+(?=\d)/,'');renderPayment();}
+function key(k){if(phase!=='pay')return;if(k==='クリア')paid='';else if(k==='1けし')paid=paid.slice(0,-1);else if(paid.length<12)paid=(paid+k).replace(/^0+(?=\d)/,'');renderPayment();}
 ['1','2','3','4','5','6','7','8','9','クリア','0','1けし'].forEach(k=>{const b=document.createElement('button');b.textContent=k;if(k.length>1)b.className='word';b.addEventListener('click',()=>key(k));$('keypad').append(b);});
 document.querySelectorAll('[data-money]').forEach(b=>b.addEventListener('click',()=>{paid=b.dataset.money;renderPayment();}));
 function reset(){stopCamera();$('startCamera').textContent='カメラを ひらく';basket=[];paid='';phase='shop';$('scan').value='';$('payment').hidden=true;$('shopping').hidden=false;renderBasket();renderPayment();message('つぎの おきゃくさん、どうぞ！');focusScan();window.scrollTo(0,0);}
@@ -134,7 +134,7 @@ const CACHE_KEY='omiseyasanProducts';
 function parseProducts(rows){
  if(!Array.isArray(rows)||!rows.length)throw Error('商品がありません。');
  const next=new Map();
- rows.forEach(p=>{if(!p||typeof p.code!=='string'||!/^\d{1,30}$/.test(p.code)||typeof p.name!=='string'||!p.name||!Number.isInteger(p.price)||p.price<0||p.price>999999||next.has(p.code))throw Error('商品データを確認してください。');next.set(p.code,{code:p.code,name:p.name,price:p.price});});
+ rows.forEach(p=>{if(!p||typeof p.code!=='string'||!/^\d{1,30}$/.test(p.code)||typeof p.name!=='string'||!p.name||!Number.isInteger(p.price)||p.price<0||p.price>999999999||next.has(p.code))throw Error('商品データを確認してください。');next.set(p.code,{code:p.code,name:p.name,price:p.price});});
  return next;
 }
 function savedProducts(){try{const t=localStorage.getItem(CACHE_KEY);return t?parseProducts(JSON.parse(t)):null;}catch{return null;}}
